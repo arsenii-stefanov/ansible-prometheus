@@ -3,27 +3,25 @@ Ansible-Prometheus
 
 ## Components
 
-* Prometheus (monitoring server - scrapes mertics from remote exporters/agents exposing metrics via HTTP)
+* `Prometheus` (monitoring server - scrapes mertics from remote exporters/agents exposing metrics via HTTP)
 
-* Alertmanager (alerting server created by Prometheus Authors - recieves alerts from Prometheus via an HTTP API according to rules)
+* `Alertmanager` (alerting server created by Prometheus Authors - recieves alerts from Prometheus via an HTTP API according to rules)
 
-* Consul (service discovery - usually, used for static servers)
+* `Consul` (service discovery - usually, used for static servers)
 
-* Grafana (visualization - JSON dashboards that query Prometheus periodically)
+* `Grafana` (visualization - JSON dashboards that query Prometheus periodically)
 
-* Blackbox Exporter (pinger, HTTP checker - you might want to have several exporters like this located in different regions)
+* `Blackbox Exporter` (pinger, HTTP checker - you might want to have several exporters like this located in different regions)
 
-* Domain Exporter (domain expiration checker)
+* `Domain Exporter` (domain expiration checker)
 
-# Intro
+## Intro
 
 > {{ playbook_dir }} is a default Ansible variable. This is where you keep your playbooks, variables, config files and templates
 
-> Ansible roles you install with Ansible-Galaxy can be stored elsewhere. I used this variable to give you a better understanding
+> Ansible roles you install with Ansible-Galaxy can be stored elsewhere. I used this variable to give you a better understanding of where all these files should be stored
 
-> of where all these files should be stored
-
-## Config example with a minimum set of parameters required to set up a server Prometheus
+## Config example with a minimum set of parameters required to set up a Prometheus server
 
 * `FILE: {{ playbook_dir }}/playbook.yml`
 
@@ -35,7 +33,6 @@ Ansible-Prometheus
   become_method: sudo
   any_errors_fatal: true
   gather_facts: true
-  serial: 1
 
   pre_tasks:
 
@@ -92,7 +89,7 @@ Don't forget to encrypt the file with your secrets:
 ansible-vault encrypt {{ playbook_dir }}/vars/prometheus-secrets.yml
 ```
 
-* FILE: {{ playbook_dir }}/vars/prometheus-monitoring.yml
+* `FILE: {{ playbook_dir }}/vars/prometheus-monitoring.yml`
 
 ```
 # Use the modern Python interpreter :)
@@ -111,9 +108,7 @@ python_modules_docker: [
 
 # If you include the `ansible-docker` role, don't forget to specify the packages, the basic one is 'docker-ce'
 docker_packages_ubuntu: [ "docker-ce" ]
-```
 
-```
 # Currently only Docker installation type is available
 prometheus_installation_type: "docker"
 
@@ -190,9 +185,7 @@ nginx_allow_ips:
     comment: "GCP Internal network"
 ```
 
-By default, you can put your regular config files in `{{ playbook_dir }}/config-files` and Jinja2 templates - in `{{ playbook_dir }}/config-templates`. Although, it is recommended
-
-to use the default file/diretcory structure and names, youc ou can override these vaules with corresponding variables (see the `defaults/main.yml` file for details)
+By default, you can put your regular config files in `{{ playbook_dir }}/config-files` and Jinja2 templates - in `{{ playbook_dir }}/config-templates`. Although, it is recommended to use the default file/diretcory structure and names, youc ou can override these vaules with corresponding variables (see the `defaults/main.yml` file for details)
 
 Here is the default directory structure:
 
