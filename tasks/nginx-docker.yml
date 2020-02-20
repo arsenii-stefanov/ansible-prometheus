@@ -1,0 +1,47 @@
+---
+
+- name: NGINX DOCKER TASK | Ensure That Host Directories Exist
+  file:
+    path: "{{ item.host_dir }}"
+    state: directory
+    owner: "{{ item.owner }}"
+    group: "{{ item.group }}"
+    mode: "{{ item.mode }}"
+  with_items: "{{ nginx_directories }}"
+
+- name: NGINX DOCKER TASK | Copy Config Files [from templates]
+  template:
+    src: "nginx/vhost.conf.j2"
+    dest: "{{ nginx_config_host_dir }}/{{ item.v_host }}.conf"
+    owner: "{{ nginx_user }}"
+    group: "{{ nginx_group }}"
+    mode: "0644"
+  with_items: "{{ nginx_virtual_hosts }}"
+  notify: "nginx_check_config_and_reload_docker"
+  when: item.create is defined and item.create == true
+
+- name: NGINX DOCKER TASK | Start Docker Container
+  docker_container:
+    name: "{{ nginx_config['docker_opts']['container_name'] }}"
+    image: "{{ nginx_config['docker_opts']['image_name'] }}:{{ nginx_config['docker_opts']['image_tag'] }}"
+    state: started
+    restart_policy: always
+    detach: yes
+    interactive: yes
+    tty: yes
+    ports: "{{ nginx_config['docker_opts']['ports'] | default(omit) }}"
+    volumes: "{{ nginx_config['docker_opts']['volumes'] | default(omit) }}"
+    log_driver: "{{ nginx_config['docker_opts']['log_driver'] | default(omit) }}"
+    network_mode: "{{ nginx_config['docker_opts']['network_mode'] | default('bridge') }}"
+    networks: "{{ nginx_config['docker_opts']['networks'] | default(omit) }}"
+    purge_networks: "{{ nginx_config['docker_opts']['purge_networks'] | default(omit) }}"
+    env: "{{ nginx_config['docker_opts']['env_vars'] | default(omit) }}"
+
+- name: NGINX DOCKER TASK  | Wait for NGINX to be up and running
+  wait_for:
+    port: "{{ nginx_http_port }}"
+    delay: 3
+    timeout: 10
+
+- name: flush handlers
+  meta: flush_handlers

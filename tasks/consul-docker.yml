@@ -1,0 +1,49 @@
+---
+
+- name: CONSUL DOCKER TASK | Ensure That Host Directories Exist
+  file:
+    path: "{{ item.host_dir }}"
+    state: directory
+    owner: "{{ item.owner }}"
+    group: "{{ item.group }}"
+    mode: "{{ item.mode }}"
+  with_items: "{{ consul_directories }}"
+
+- name: CONSUL DOCKER TASK | Copy Config Files
+  copy:
+    src: "{{ item.src }}"
+    dest: "{{ item.dest }}"
+    owner: "{{ item.owner }}"
+    group: "{{ item.group }}"
+    mode: "{{ item.mode }}"
+  with_items: "{{ consul_files }}"
+  notify: "restart_consul_docker"
+  when: consul_files is defined and consul_files != ""
+
+- name: CONSUL DOCKER TASK | Copy Config Files [from templates]
+  template:
+    src: "{{ item.src }}"
+    dest: "{{ item.dest }}"
+    owner: "{{ item.owner }}"
+    group: "{{ item.group }}"
+    mode: "{{ item.mode }}"
+  with_items: "{{ consul_templates }}"
+  notify: "restart_consul_docker"
+  when: consul_templates is defined and consul_templates != ""
+
+- name: CONSUL DOCKER TASK | Start Docker Container
+  docker_container:
+    name: "{{ consul_config['docker_opts']['container_name'] }}"
+    image: "{{ consul_config['docker_opts']['image_name'] }}:{{ consul_config['docker_opts']['image_tag'] }}"
+    state: started
+    restart_policy: always
+    detach: yes
+    interactive: yes
+    tty: yes
+    ports: "{{ consul_config['docker_opts']['ports'] | default(omit) }}"
+    volumes: "{{ consul_config['docker_opts']['volumes'] | default(omit) }}"
+    log_driver: "{{ consul_config['docker_opts']['log_driver'] | default(omit) }}"
+    network_mode: "{{ consul_config['docker_opts']['network_mode'] | default('bridge') }}"
+    networks: "{{ consul_config['docker_opts']['networks'] | default(omit) }}"
+    purge_networks: "{{ consul_config['docker_opts']['purge_networks'] | default(omit) }}"
+    env: "{{ consul_config['docker_opts']['env_vars'] | default(omit) }}"

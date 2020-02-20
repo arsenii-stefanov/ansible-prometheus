@@ -1,0 +1,82 @@
+##################################
+###     MANAGED BY ANSIBLE     ###
+##################################
+
+{% if item.ssl_enable is defined and item.ssl_enable == true %}
+server {
+    listen {{ item.http_listen_port }} {% if item.default_server_http is defined and item.default_server_http == true %}default{% endif %};
+    server_name {{ item.v_host }};
+    return 301 https://$host$request_uri;
+}
+{% endif %}
+
+server {
+
+{% if item.ssl_enable is not defined or (item.ssl_enable is defined and item.ssl_enable == false) %}
+    listen {{ item.http_listen_port }} {% if item.default_server_http is defined and item.default_server_http == true %}default{% endif %};
+{% elif item.ssl_enable is defined and item.ssl_enable == true %}
+    listen {{ item.https_listen_port }} {% if item.default_server_https is defined and item.default_server_https == true %}default{% endif %} ssl {{ item.http_protocol | default('http2') }};
+{% endif %}
+
+    server_name {{ item.v_host }};
+
+{% if item.access_log is defined and item.access_log != "" %}
+    access_log {{ item.access_log }} {{ item.access_log_format }};
+{% endif %}
+{% if item.error_log is defined and item.error_log != "" %}
+    error_log {{ item.error_log }} {{ item.error_log_format }};
+{% endif %}
+
+{% if item.ssl_enable is defined and item.ssl_enable == true %}
+    ssl_certificate ssl/{{ item.v_host }}/fullchain.cer;
+    ssl_certificate_key ssl/{{ item.v_host }}/{{ item.v_host }}.key;
+{% if dhparam_path != 'UNDEFINED' %}
+    ssl_dhparam             {{ dhparam_path }};
+{% endif %}
+    ssl_session_timeout     24h;
+    ssl_session_cache       shared:SSL:50m;
+    ssl_protocols           TLSv1.1 TLSv1.2;
+    ssl_ciphers 'ECDHE-ECDSA-CHACHA20-POLY1305:ECDHE-RSA-CHACHA20-POLY1305:ECDHE-ECDSA-AES128-GCM-SHA256:ECDHE-RSA-AES128-GCM-SHA256:ECDHE-ECDSA-AES256-GCM-SHA384:ECDHE-RSA-AES256-GCM-SHA384:DHE-RSA-AES128-GCM-SHA256:DHE-RSA-AES256-GCM-SHA384:ECDHE-ECDSA-AES128-SHA256:ECDHE-RSA-AES128-SHA256:ECDHE-ECDSA-AES128-SHA:ECDHE-RSA-AES256-SHA384:ECDHE-RSA-AES128-SHA:ECDHE-ECDSA-AES256-SHA384:ECDHE-ECDSA-AES256-SHA:ECDHE-RSA-AES256-SHA:DHE-RSA-AES128-SHA256:DHE-RSA-AES128-SHA:DHE-RSA-AES256-SHA256:DHE-RSA-AES256-SHA:ECDHE-ECDSA-DES-CBC3-SHA:ECDHE-RSA-DES-CBC3-SHA:EDH-RSA-DES-CBC3-SHA:AES128-GCM-SHA256:AES256-GCM-SHA384:AES128-SHA256:AES256-SHA256:AES128-SHA:AES256-SHA:DES-CBC3-SHA:!DSS';
+    ssl_prefer_server_ciphers       on;
+{% endif %}
+
+    {% if nginx_real_ip['set_real_ip_from'] is defined and nginx_real_ip['set_real_ip_from'] != "" -%}
+    {% for ip_set in nginx_real_ip['set_real_ip_from'] %}
+set_real_ip_from {{ ip_set['ip'] }};    # {{ ip_set['comment'] }}
+    {% endfor -%}
+    real_ip_header {{ real_ip_header | default('X-Forwarded-For') }};
+    real_ip_recursive {{ real_ip_recursive | default('on') }};
+    {% endif -%}
+
+    {% if nginx_allow_ips is defined -%}
+    satisfy any;
+    {% for ip_set in nginx_allow_ips %}
+allow {{ ip_set['ip'] }};    # {{ ip_set['comment'] }}
+    {% endfor -%}
+    deny all;
+    {% endif -%}
+    {% if nginx_basic_auth_file_path is defined and nginx_basic_auth_file_path != "" %}
+    auth_basic           "Restricted Area";
+    auth_basic_user_file {{ nginx_basic_auth_file_path }};
+    {% endif %}
+
+    location / {
+        proxy_buffers 64          256k;
+        proxy_buffer_size         512k;
+        proxy_connect_timeout     15s;
+        proxy_read_timeout        30s;
+        proxy_send_timeout        30s;
+        resolver {{ nginx_resolver }} valid=30s;
+        set $upstream {{ item.upstream }};
+        proxy_pass http://$upstream;
+    }
+
+{% if item.ssl_enable is defined and item.ssl_enable == true %}
+    location ^~ /.well-known {
+      allow all;
+      root {{ letsencrypt_webroot | default('/var/www/letsencrypt') }};
+      try_files $uri $uri/ =404;
+    }
+{% endif %}
+
+}

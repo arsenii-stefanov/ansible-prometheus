@@ -1,0 +1,53 @@
+
+---
+
+- name: BLACKBOX EXPORTER DOCKER TASK | Ensure That Host Directories Exist
+  file:
+    path: "{{ item.host_dir }}"
+    state: directory
+    owner: "{{ item.owner }}"
+    group: "{{ item.group }}"
+    mode: "{{ item.mode }}"
+  with_items: "{{ blackbox_exporter_directories }}"
+
+- name: BLACKBOX EXPORTER DOCKER TASK | Copy Config Files
+  copy:
+    src: "{{ item.src }}"
+    dest: "{{ item.dest }}"
+    owner: "{{ item.owner }}"
+    group: "{{ item.group }}"
+    mode: "{{ item.mode }}"
+  with_items: "{{ blackbox_exporter_files }}"
+  notify: "restart_blackbox_exporter_docker"
+  when: blackbox_exporter_files is defined and blackbox_exporter_files != ""
+
+- name: BLACKBOX EXPORTER DOCKER TASK | Copy Config Files [from templates]
+  template:
+    src: "{{ item.src }}"
+    dest: "{{ item.dest }}"
+    owner: "{{ item.owner }}"
+    group: "{{ item.group }}"
+    mode: "{{ item.mode }}"
+  with_items: "{{ blackbox_exporter_templates }}"
+  notify: "restart_blackbox_exporter_docker"
+  when: blackbox_exporter_templates is defined and blackbox_exporter_templates != ""
+
+- name: BLACKBOX EXPORTER DOCKER TASK | Start Docker Container
+  docker_container:
+    name: "{{ blackbox_exporter_config['docker_opts']['container_name'] }}"
+    image: "{{ blackbox_exporter_config['docker_opts']['image_name'] }}:{{ blackbox_exporter_config['docker_opts']['image_tag'] }}"
+    state: started
+    restart_policy: always
+    detach: yes
+    interactive: yes
+    tty: yes
+    ports: "{{ blackbox_exporter_config['docker_opts']['ports'] | default(omit) }}"
+    command:
+      - "--web.listen-address=:{{ consul_http_port }}"
+      - "--config.file={{ blackbox_exporter_config_container_dir }}/{{ blackbox_exporter_main_config_file }}"
+    volumes: "{{ blackbox_exporter_config['docker_opts']['volumes'] | default(omit) }}"
+    log_driver: "{{ blackbox_exporter_config['docker_opts']['log_driver'] | default(omit) }}"
+    network_mode: "{{ blackbox_exporter_config['docker_opts']['network_mode'] | default('bridge') }}"
+    networks: "{{ blackbox_exporter_config['docker_opts']['networks'] | default(omit) }}"
+    purge_networks: "{{ blackbox_exporter_config['docker_opts']['purge_networks'] | default(omit) }}"
+    env: "{{ item.env_vars | default(omit) }}"

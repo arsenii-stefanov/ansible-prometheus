@@ -1,0 +1,464 @@
+---
+
+prometheus_installation_type: "docker"        # Available options: docker
+
+prometheus_docker_networks: [
+  { name: "prometheus" }
+]
+
+prometheus_main_mount_dir: "/srv"
+
+# Additional disks (it is recommended to have at least one disk for Prometheus and Grafana data)
+prometheus_disk_mounts: [
+    {
+      src: "/dev/sdb",
+      dest: "{{ prometheus_main_mount_dir }}",
+      fstype: "ext4",
+      fs_opts: "-m 0 -F -E lazy_itable_init=0,lazy_journal_init=0,discard",
+      mount_opts: "discard,defaults,nofail",
+      state: mounted
+    }
+]
+
+# Put your templates or files here
+config_templates_path: "{{ playbook_dir }}/config-templates"
+config_files_path: "{{ playbook_dir }}/config-files"
+
+install_consul: true
+install_prometheus_alertmanager: true
+install_blackbox_exporter: true
+install_domain_exporter: true
+install_grafana: true
+
+# Software versions
+consul_version_docker: "1.6.2"
+prometheus_version_docker: "v2.15.2"
+prometheus_alertmanager_version_docker: "v0.20.0"
+blackbox_exporter_version_docker: "v0.16.0"
+domain_exporter_version_docker: "v1.4.0"
+grafana_version_docker: "6.6.0"
+
+#####################
+###     PORTS     ###
+#####################
+consul_http_port: 8500
+# https://github.com/prometheus/prometheus/wiki/Default-port-allocations
+prometheus_http_port: 9090
+prometheus_alertmanager_http_port: 9093
+blackbox_exporter_http_port: 9115
+domain_exporter_http_port: 9203
+grafana_http_port: 3000
+
+#####################################
+###     FILES AND DIRECTORIES     ###
+#####################################
+
+prometheus_owner: 65534
+prometheus_group: 65534
+
+grafana_owner: 472
+grafana_group: 472
+
+consul_data_host_dir: "{{ prometheus_main_mount_dir }}/consul/data"
+consul_data_container_dir: "/consul/data"
+
+prometheus_config_host_dir: "{{ prometheus_main_mount_dir }}/prometheus/config"
+prometheus_config_container_dir: "/etc/prometheus"
+
+prometheus_rules_config_host_dir: "{{ prometheus_main_mount_dir }}/prometheus/rules"
+prometheus_rules_config_container_dir: "/etc/prometheus-rules"
+prometheus_rules_config_local_dir: "{{ config_files_path }}/prometheus/rules"
+
+prometheus_data_host_dir: "{{ prometheus_main_mount_dir }}/prometheus/data"
+prometheus_data_container_dir: "/prometheus"
+
+prometheus_alertmanager_config_host_dir: "{{ prometheus_main_mount_dir }}/prometheus-alertmanager/config"
+prometheus_alertmanager_config_container_dir: "/etc/alertmanager"
+
+blackbox_exporter_config_host_dir: "{{ prometheus_main_mount_dir }}/blackbox-exporter/config"
+blackbox_exporter_config_container_dir: "/config"
+
+grafana_config_host_dir: "{{ prometheus_main_mount_dir }}/grafana/config"
+grafana_config_container_dir: "/etc/grafana"
+
+grafana_data_host_dir: "{{ prometheus_main_mount_dir }}/grafana/data"
+grafana_data_container_dir: "/var/lib/grafana"
+
+prometheus_main_config_file: "prometheus.yml"
+prometheus_alertmanager_config_file: "alertmanager.yml"
+blackbox_exporter_main_config_file: "blackbox.yml"
+
+###########################
+###     DIRECTORIES     ###  
+###########################
+
+# CONSUL DIRECTORIES
+consul_directories: [
+    {
+      host_dir: "{{ consul_data_host_dir }}",
+      container_dir: "{{ consul_data_container_dir }}",
+      owner: "root",
+      group: "root",
+      mode: "0755"
+    }
+]
+
+# PROMETHEUS DIRECTORIES
+prometheus_directories: [
+    {
+      host_dir: "{{ prometheus_config_host_dir }}",
+      container_dir: "{{ prometheus_config_container_dir }}",
+      owner: "{{ prometheus_owner }}",
+      group: "{{ prometheus_group }}",
+      mode: "0755"
+    },
+    {
+      host_dir: "{{ prometheus_rules_config_host_dir }}",
+      container_dir: "{{ prometheus_rules_config_container_dir }}",
+      owner: "{{ prometheus_owner }}",
+      group: "{{ prometheus_group }}",
+      mode: "0755"
+    },
+    {
+      host_dir: "{{ prometheus_data_host_dir }}",
+      container_dir: "{{ prometheus_data_container_dir }}",
+      owner: "{{ prometheus_owner }}",
+      group: "{{ prometheus_group }}",
+      mode: "0755"
+    }
+]
+
+# PROMETHEUS ALERTMANAGER DIRECTORIES
+prometheus_alertmanager_directories: [
+    {
+      host_dir: "{{ prometheus_alertmanager_config_host_dir }}",
+      container_dir: "{{ prometheus_alertmanager_config_container_dir }}",
+      owner: "{{ prometheus_owner }}",
+      group: "{{ prometheus_group }}",
+      mode: "0755"
+    }
+]
+
+# BLACKBOX EXPORTER DIRECTORIES
+blackbox_exporter_directories: [
+    {
+      host_dir: "{{ blackbox_exporter_config_host_dir }}",
+      container_dir: "{{ blackbox_exporter_config_container_dir }}",
+      owner: "root",
+      group: "root",
+      mode: "0755"
+    }
+]
+
+# GRAFANA DIRECTORIES
+grafana_directories: [
+    {
+      host_dir: "{{ grafana_config_host_dir }}",
+      container_dir: "{{ grafana_config_container_dir }}",
+      owner: "{{ grafana_owner }}",
+      group: "{{ grafana_group }}",
+      mode: "0755"
+    },
+    {
+      host_dir: "{{ grafana_data_host_dir }}",
+      container_dir: "{{ grafana_data_container_dir }}",
+      owner: "{{ grafana_owner }}",
+      group: "{{ grafana_group }}",
+      mode: "0755"
+    }
+]
+
+#####################
+###     FILES     ###  
+#####################
+
+# If you want to use static configs rather than Jinja 2 templates or vice versa, you can switch
+# between {{ prometheus_templates }} and {{ prometheus_files }}, {{ prometheus_alertmanager_templates }} and
+# {{ prometheus_alertmanager_files }}, {{ blackbox_exporter_templates }} and {{ blackbox_exporter_files }}. Ansible
+# will initiate a 'copy' task or a 'template' task depending on whether the 'xxxxx_templates' or 'xxxxx_files'
+# variables are defined or not. Just make sure your files/templates are located in the {{ config_templates_path }} and
+# {{ config_files_path }} directories respectively
+
+# PROMETHEUS FILES
+prometheus_templates: [
+    {
+      src: "{{ config_templates_path }}/prometheus/{{ prometheus_main_config_file }}.j2",
+      dest: "{{ prometheus_config_host_dir }}/{{ prometheus_main_config_file }}",
+      owner: "{{ prometheus_owner }}",
+      group: "{{ prometheus_group }}",
+      mode: "0600"
+    }
+]
+
+# PROMETHEUS ALERTMANAGER FILES
+prometheus_alertmanager_templates: [
+    {
+      src: "{{ config_templates_path }}/prometheus-alertmanager/{{ prometheus_alertmanager_config_file }}.j2",
+      dest: "{{ prometheus_alertmanager_config_host_dir }}/{{ prometheus_alertmanager_config_file }}",
+      owner: "{{ prometheus_owner }}",
+      group: "{{ prometheus_group }}",
+      mode: "0600"
+    }
+]
+
+# BLACKBOX EXPORTER FILES
+blackbox_exporter_templates: [
+    {
+      src: "{{ config_templates_path }}/blackbox-exporter/{{ blackbox_exporter_main_config_file }}.j2",
+      dest: "{{ blackbox_exporter_config_host_dir }}/{{ blackbox_exporter_main_config_file }}",
+      owner: "root",
+      group: "root",
+      mode: "0600"
+    }
+]
+
+#######################
+###     CONFIGS     ###
+#######################
+
+# CONSUL CONFIGS
+consul_config:
+  docker_opts:
+    container_name: "consul"
+    image_name: "consul"
+    image_tag: "{{ consul_version_docker }}"
+    volumes:
+      - "{{ consul_data_host_dir }}:{{ consul_data_container_dir }}"
+    ports:
+      - "{{ consul_http_port }}:{{ consul_http_port }}"
+    env_vars:
+      var: ""
+    log_driver: "json-file"
+    network_mode: "bridge"
+    networks: "{{ prometheus_docker_networks }}"
+    purge_networks: true
+
+# PROMETHEUS CONFIGS
+prometheus_config:
+  docker_opts:
+    container_name: "prometheus"
+    image_name: "prom/prometheus"
+    image_tag: "{{ prometheus_version_docker }}"
+    volumes:
+      - "{{ prometheus_config_host_dir }}/{{ prometheus_main_config_file }}:{{ prometheus_config_container_dir }}/{{ prometheus_main_config_file }}"
+      - "{{ prometheus_rules_config_host_dir }}:{{ prometheus_rules_config_container_dir }}"
+      - "{{ prometheus_data_host_dir }}:{{ prometheus_data_container_dir }}"
+    ports:
+      - "{{ prometheus_http_port }}:{{ prometheus_http_port }}"
+    env_vars:
+      EXTERNAL_URL: "{{ prometheus_url }}"
+    log_driver: "json-file"
+    network_mode: "bridge"
+    networks: "{{ prometheus_docker_networks }}"
+    purge_networks: true
+  config_opts:
+    max_connections: "1024"
+    retention_policy: "{{ prometheus_retention_policy | default('180d') }}"
+    max_concurrency: "500"
+
+# PROMETHEUS ALERTMANAGER CONFIGS
+prometheus_alertmanager_config:
+  docker_opts:
+    container_name: "alertmanager"
+    image_name: "prom/alertmanager"
+    image_tag: "{{ prometheus_alertmanager_version_docker }}"
+    volumes:
+      - "{{ prometheus_alertmanager_config_host_dir }}:{{ prometheus_alertmanager_config_container_dir }}"
+    ports:
+      - "{{ prometheus_alertmanager_http_port }}:{{ prometheus_alertmanager_http_port }}"
+    env_vars:
+      var: ""
+    log_driver: "json-file"
+    network_mode: "bridge"
+    networks: "{{ prometheus_docker_networks }}"
+    purge_networks: true
+
+# BLACKBOX EXPORTER CONFIGS
+blackbox_exporter_config:
+  docker_opts:
+    container_name: "blackbox-exporter"
+    image_name: "prom/blackbox-exporter"
+    image_tag: "{{ blackbox_exporter_version_docker }}"
+    volumes:
+      - "{{ blackbox_exporter_config_host_dir }}/{{ blackbox_exporter_main_config_file }}:{{ blackbox_exporter_config_container_dir }}/{{ blackbox_exporter_main_config_file }}"
+    ports:
+      - "{{ blackbox_exporter_http_port }}:{{ blackbox_exporter_http_port }}"
+    env_vars:
+      var: ""
+    log_driver: "json-file"
+    network_mode: "bridge"
+    networks: "{{ prometheus_docker_networks }}"
+    purge_networks: true
+
+# DOMAIN EXPORTER CONFIGS
+domain_exporter_config:
+  docker_opts:
+    container_name: "domain-exporter"
+    image_name: "caarlos0/domain_exporter"
+    image_tag: "{{ domain_exporter_version_docker }}"
+#    volumes:
+#      - "{{ domain_exporter_config_host_dir }}:{{ domain_exporter_config_container_dir }}"
+    ports:
+      - "{{ domain_exporter_http_port }}:{{ domain_exporter_http_port }}"
+    env_vars:
+      var: ""
+    log_driver: "json-file"
+    network_mode: "bridge"
+    networks: "{{ prometheus_docker_networks }}"
+    purge_networks: true
+
+# GRAFANA CONFIGS
+grafana_config:
+  docker_opts:
+    container_name: "grafana"
+    image_name: "grafana/grafana"
+    image_tag: "{{ grafana_version_docker }}"
+    volumes:
+      - "{{ grafana_data_host_dir }}:{{ grafana_data_container_dir }}"
+    ports:
+      - "{{ grafana_http_port }}:{{ grafana_http_port }}"
+    env_vars:
+      GF_INSTALL_PLUGINS: ""
+      GF_SERVER_PROTOCOL: "http"
+      GF_SERVER_HTTP_ADDR: "0.0.0.0"
+      GF_SERVER_HTTP_PORT: "{{ grafana_http_port | string }}"
+      GF_SERVER_DOMAIN: "localhost"
+      GF_SERVER_ROOT_URL: "http://grafana.example.com"
+      GF_DATABASE_TYPE: "sqlite3"
+      GF_DATABASE_HOST: "localhost"
+      GF_DATABASE_NAME: "grafana"
+      GF_DATABASE_USER: "grafana"
+      GF_DATABASE_PASSWORD: "{{ grafana_database_password }}"
+      GF_DATABASE_PATH: "grafana.db"
+      GF_SECURITY_ADMIN_PASSWORD: "{{ grafana_admin_password }}"
+      GF_SECURITY_ADMIN_USER: "admin"
+      GF_SECURITY_SECRET_KEY: "{{ grafana_secret_key }}"
+    log_driver: "json-file"
+    network_mode: "bridge"
+    networks: "{{ prometheus_docker_networks }}"
+    purge_networks: true
+
+
+###################################
+###     NGINX REVERSE PROXY     ###
+###################################
+
+install_nginx_reverse_proxy: false
+
+nginx_user: "root"
+nginx_group: "root"
+nginx_main_host_dir: "{{ prometheus_main_mount_dir }}/nginx"
+nginx_config_host_dir: "{{ nginx_main_host_dir }}/conf.d"
+nginx_main_container_dir: "/etc/nginx"
+nginx_config_container_dir: "/etc/nginx/conf.d"
+nginx_http_port: "80"
+
+nginx_resolver: "127.0.0.11" # default Docker DNS resolver
+
+nginx_config:
+  docker_opts:
+    container_name: "nginx"
+    image_name: "nginx"
+    image_tag: "1.17-alpine"
+    volumes:
+      - "{{ nginx_config_host_dir }}:{{ nginx_config_container_dir }}"
+    ports:
+      - "{{ nginx_http_port }}:{{ nginx_http_port }}"
+    log_driver: "json-file"
+    network_mode: "bridge"
+    networks: "{{ prometheus_docker_networks | default('prometheus') }}"
+    purge_networks: true
+
+nginx_directories: [
+    {
+      host_dir: "{{ nginx_main_host_dir }}",
+      container_dir: "{{ nginx_main_container_dir }}",
+      owner: "{{ nginx_user }}",
+      group: "{{ nginx_group }}",
+      mode: "0755"
+    },
+    {
+      host_dir: "{{ nginx_config_host_dir }}",
+      container_dir: "{{ nginx_config_container_dir }}",
+      owner: "{{ nginx_user }}",
+      group: "{{ nginx_group }}",
+      mode: "0755"
+    }
+]
+
+prometheus_domain: prometheus.example.com
+prometheus_alertmanager_domain: alertmanager.example.com
+consul_domain: consul.example.com
+grafana_domain: grafana.example.com
+
+nginx_virtual_hosts: [
+    { v_host: "{{ prometheus_domain }}",
+      http_listen_port: "80",
+      https_listen_port: "",
+      http_protocol: "",
+      access_log: "",
+      access_log_format: "",
+      error_log_format: "",
+      error_log: "",
+      upstream: "{{ prometheus_config['docker_opts']['container_name'] }}:{{ prometheus_http_port }}",
+      upstream_name: "prometheus",
+      ssl_enable: false,
+      nginx_basic_auth_file_path: "",
+      create: true
+    },
+    { v_host: "{{ prometheus_alertmanager_domain }}",
+      http_listen_port: "80",
+      https_listen_port: "",
+      http_protocol: "",
+      access_log: "",
+      access_log_format: "",
+      error_log_format: "",
+      error_log: "",
+      upstream: "{{ prometheus_alertmanager_config['docker_opts']['container_name'] }}:{{ prometheus_alertmanager_http_port }}",
+      upstream_name: "alertmanager",
+      ssl_enable: false,
+      nginx_basic_auth_file_path: "",
+      create: "{{ install_prometheus_alertmanager }}" # true/false
+    },
+    { v_host: "{{ consul_domain }}",
+      http_listen_port: "80",
+      https_listen_port: "",
+      http_protocol: "",
+      access_log: "",
+      access_log_format: "",
+      error_log_format: "",
+      error_log: "",
+      upstream: "{{ consul_config['docker_opts']['container_name'] }}:{{ consul_http_port }}",
+      upstream_name: "consul",
+      ssl_enable: false,
+      nginx_basic_auth_file_path: "",
+      create: "{{ install_consul }}" # true/false
+    },
+    { v_host: "{{ grafana_domain }}",
+      default_server_http: true,
+      http_listen_port: "80",
+      https_listen_port: "",
+      http_protocol: "",
+      access_log: "",
+      access_log_format: "",
+      error_log_format: "",
+      error_log: "",
+      upstream: "{{ grafana_config['docker_opts']['container_name'] }}:{{ grafana_http_port }}",
+      upstream_name: "grafana",
+      ssl_enable: false,
+      nginx_basic_auth_file_path: "",
+      create: "{{ install_grafana }}" # true/false
+    },
+]
+
+
+## If nginx_allow_ips is enabled, only these IP will be whitelisted, the rest will be blacklisted
+#nginx_allow_ips:
+#  - ip: "127.0.0.1"
+#    comment: "Localhost"
+
+## Enable this if your NGINX is behind a load balancer or another proxy
+#nginx_real_ip:
+#  set_real_ip_from:
+#    - ip: "10.10.10.10/32"
+#      comment: "Load Balancer"

@@ -1,0 +1,6 @@
+---
+
+- name: PROMETHEUS DOCKER NETWORK TASK | Ensure That Docker Networks Exist
+  docker_network:
+    name: "{{ item.name }}"
+  with_items: "{{ prometheus_docker_networks }}"

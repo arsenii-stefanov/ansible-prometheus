@@ -1,0 +1,86 @@
+---
+
+- name: PROMETHEUS DOCKER TASK | Ensure That Host Directories Exist
+  file:
+    path: "{{ item.host_dir }}"
+    state: directory
+    owner: "{{ item.owner }}"
+    group: "{{ item.group }}"
+    mode: "{{ item.mode }}"
+  with_items: "{{ prometheus_directories }}"
+
+- name: PROMETHEUS DOCKER TASK | Copy Config Files
+  copy:
+    src: "{{ item.src }}"
+    dest: "{{ item.dest }}"
+    owner: "{{ item.owner }}"
+    group: "{{ item.group }}"
+    mode: "{{ item.mode }}"
+  with_items: "{{ prometheus_files }}"
+  notify: "reload_prometheus"
+  when: prometheus_files is defined and prometheus_files != ""
+
+- name: PROMETHEUS DOCKER TASK | Copy Config Files [from templates]
+  template:
+    src: "{{ item.src }}"
+    dest: "{{ item.dest }}"
+    owner: "{{ item.owner }}"
+    group: "{{ item.group }}"
+    mode: "{{ item.mode }}"
+  with_items: "{{ prometheus_templates }}"
+  notify: "reload_prometheus"
+  when: prometheus_templates is defined and prometheus_templates != ""
+
+- name: PROMETHEUS DOCKER TASK | Copy Rules Files
+  copy:
+    src: "{{ prometheus_rules_config_local_dir }}/"
+    dest: "{{ prometheus_rules_config_host_dir }}/"
+    owner: "{{ prometheus_owner }}"
+    group: "{{ prometheus_group }}"
+    mode: "0644"
+  notify: "reload_prometheus"
+
+- name: PROMETHEUS DOCKER TASK | Start Docker Container
+  docker_container:
+    name: "{{ prometheus_config['docker_opts']['container_name'] }}"
+    image: "{{ prometheus_config['docker_opts']['image_name'] }}:{{ prometheus_config['docker_opts']['image_tag'] }}"
+    state: started
+    restart_policy: always
+    detach: yes
+    interactive: yes
+    tty: yes
+    ports: "{{ prometheus_config['docker_opts']['ports'] | default(omit) }}"
+    command:
+      - '--config.file={{ prometheus_config_container_dir }}/{{ prometheus_main_config_file }}'
+      - '--web.external-url={{ prometheus_url }}'
+      - "--storage.tsdb.path={{ prometheus_data_container_dir }}"
+      - "--web.max-connections={{ prometheus_config['config_opts']['max_connections'] }}"
+      - "--web.enable-admin-api"
+      - "--storage.tsdb.retention={{ prometheus_config['config_opts']['retention_policy'] }}"
+      - "--query.max-concurrency={{ prometheus_config['config_opts']['max_concurrency'] }}"
+      - "--web.enable-lifecycle"
+      - "--web.console.libraries=/usr/share/prometheus/console_libraries"
+      - "--web.console.templates=/usr/share/prometheus/consoles"
+    volumes: "{{ prometheus_config['docker_opts']['volumes'] | default(omit) }}"
+    log_driver: "{{ prometheus_config['docker_opts']['log_driver'] | default(omit) }}"
+    network_mode: "{{ prometheus_config['docker_opts']['network_mode'] | default('bridge') }}"
+    networks: "{{ prometheus_config['docker_opts']['networks'] | default(omit) }}"
+    purge_networks: "{{ prometheus_config['docker_opts']['purge_networks'] | default(omit) }}"
+    env: "{{ prometheus_config['docker_opts']['env_vars'] | default(omit) }}"
+
+- name: PROMETHEUS DOCKER TASK | Wait for Prometheus to Get Ready
+  block:
+    - name: Try to Ping Prometheus on 'prometheus_url' defined in the config file
+      uri:
+        url: "{{ prometheus_url }}/-/ready"
+        status_code: 200
+      register: result
+      until: result.status == 200
+      retries: 20
+      delay: 3
+  rescue:
+    - debug:
+        msg: "Could not reach Prometheus via {{ prometheus_url }} to check its readiness. If this is an initial installation and you decided to use an NGINX reverse proxy then this is likely an expected behavior so you may ignore this warning."
+
+- name: flush handlers
+  meta: flush_handlers

@@ -1,0 +1,20 @@
+---
+
+- name: PROMETHEUS SYSTEM CONFIG TASK | Ensure That Filesystem Is Created
+  filesystem:
+    fstype: "{{ item.fstype }}"
+    dev: "{{ item.src }}"
+    opts: "{{ item.fs_opts }}"
+    force: no
+  with_items: "{{ prometheus_disk_mounts }}"
+  when: prometheus_disk_mounts is defined and prometheus_disk_mounts != ""
+
+- name: PROMETHEUS SYSTEM CONFIG TASK | Ensure That the Disk Is Mounted
+  mount:
+    path: "{{ item.dest }}"
+    src: "{{ item.src }}"
+    fstype: "{{ item.fstype }}"
+    opts: "{{ item.mount_opts }}"
+    state: "{{ item.state }}"
+  with_items: "{{ prometheus_disk_mounts }}"
+  when: prometheus_disk_mounts is defined and prometheus_disk_mounts != ""

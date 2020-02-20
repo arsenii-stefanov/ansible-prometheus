@@ -1,0 +1,36 @@
+---
+
+- name: Include System Config Task
+  include_tasks: system-config.yml
+
+- name: Include Docker Network Task
+  include_tasks: docker-network.yml
+  when: prometheus_installation_type is defined and prometheus_installation_type == 'docker'
+
+- name: Include NGINX Task
+  include_tasks: nginx-docker.yml
+  when: (install_nginx_reverse_proxy is defined and install_nginx_reverse_proxy == true) and (prometheus_installation_type is defined and prometheus_installation_type == 'docker')
+
+- name: Include Consul Task
+  include_tasks: consul-docker.yml
+  when: (install_consul is defined and install_consul == true) and (prometheus_installation_type is defined and prometheus_installation_type == 'docker')
+
+- name: Include Prometheus Task
+  include_tasks: prometheus-docker.yml
+  when: prometheus_installation_type is defined and prometheus_installation_type == 'docker'
+
+- name: Include Prometheus Alertmanager Task
+  include_tasks: prometheus-alertmanager-docker.yml
+  when: (install_prometheus_alertmanager is defined and install_prometheus_alertmanager == true) and (prometheus_installation_type is defined and prometheus_installation_type == 'docker')
+
+- name: Include Blackbox Exporter Task
+  include_tasks: blackbox-exporter-docker.yml
+  when: (install_blackbox_exporter is defined and install_blackbox_exporter == true) and (prometheus_installation_type is defined and prometheus_installation_type == 'docker')
+
+- name: Include Domain Exporter Task
+  include_tasks: domain-exporter-docker.yml
+  when: (install_domain_exporter is defined and install_domain_exporter == true) and (prometheus_installation_type is defined and prometheus_installation_type == 'docker')
+
+- name: Include Grafana Task
+  include_tasks: grafana-docker.yml
+  when: (install_grafana is defined and install_grafana == true) and (prometheus_installation_type is defined and prometheus_installation_type == 'docker')
