@@ -84,6 +84,18 @@ grafana_config_container_dir: "/etc/grafana"
 grafana_data_host_dir: "{{ prometheus_main_mount_dir }}/grafana/data"
 grafana_data_container_dir: "/var/lib/grafana"
 
+grafana_provisioning_host_dir: "{{ grafana_config_host_dir }}/provisioning"
+grafana_provisioning_container_dir: "/usr/share/grafana/conf/provisioning"
+
+grafana_provis_dashboards_host_dir: "{{ grafana_provisioning_host_dir }}/dashboards"
+grafana_provis_dashboards_container_dir: "{{ grafana_provisioning_container_dir }}/dashboards"
+
+grafana_provis_datasources_host_dir: "{{ grafana_provisioning_host_dir }}/datasources"
+grafana_provis_datasources_container_dir: "{{ grafana_provisioning_container_dir }}/datasources"
+
+grafana_dashboards_host_dir: "{{ grafana_data_host_dir }}/dashboards"
+grafana_dashboards_container_dir: "{{ grafana_data_container_dir }}/dashboards"
+
 prometheus_main_config_file: "prometheus.yml"
 prometheus_alertmanager_config_file: "alertmanager.yml"
 blackbox_exporter_main_config_file: "blackbox.yml"
@@ -162,6 +174,27 @@ grafana_directories: [
     {
       host_dir: "{{ grafana_data_host_dir }}",
       container_dir: "{{ grafana_data_container_dir }}",
+      owner: "{{ grafana_owner }}",
+      group: "{{ grafana_group }}",
+      mode: "0755"
+    },
+    {
+      host_dir: "{{ grafana_provis_dashboards_host_dir }}",
+      container_dir: "{{ grafana_provis_dashboards_container_dir }}",
+      owner: "{{ grafana_owner }}",
+      group: "{{ grafana_group }}",
+      mode: "0755"
+    },
+    {
+      host_dir: "{{ grafana_provis_datasources_host_dir }}",
+      container_dir: "{{ grafana_provis_datasources_container_dir }}",
+      owner: "{{ grafana_owner }}",
+      group: "{{ grafana_group }}",
+      mode: "0755"
+    },
+    {
+      host_dir: "{{ grafana_dashboards_host_dir }}",
+      container_dir: "{{ grafana_dashboards_container_dir }}",
       owner: "{{ grafana_owner }}",
       group: "{{ grafana_group }}",
       mode: "0755"

@@ -149,16 +149,46 @@ grafana_version_docker: "6.6.0"
 # Domain_exporter: "v1.4.0"
 # Grafana: "6.6.0"
 
+# Optionally, you can add pre-configured Datasources and Dashboards for Grafana. See the example below
+# (config_templates_path, config_templates_path and other variables are defined in 'defaults/main.yml')
+
+grafana_templates: [
+    {
+      src: "{{ config_templates_path }}/grafana/provisioning/dashboards/default.yml.j2",
+      dest: "{{ grafana_provis_dashboards_host_dir }}",
+      owner: "{{ grafana_owner }}",
+      group: "{{ grafana_group }}",
+      mode: "0755"
+    },
+    {
+      src: "{{ config_templates_path }}/grafana/provisioning/datasources/default.yml.j2",
+      dest: "{{ grafana_provis_datasources_host_dir }}",
+      owner: "{{ grafana_owner }}",
+      group: "{{ grafana_group }}",
+      mode: "0755"
+    }
+]
+
+grafana_files: [
+    {
+      src: "{{ config_files_path }}/grafana/dashboards/",
+      dest: "{{ grafana_dashboards_host_dir }}",
+      owner: "{{ grafana_owner }}",
+      group: "{{ grafana_group }}",
+      mode: "0755"
+    }
+]
+
 # NGINX reverse proxy (with NGINX you can access your services by a DNS name and use the same port)
 install_nginx_reverse_proxy: true
 
 # Usually, internal services, such as Prometheus, Alertmanager and Consul should not be accessible from the Internel
 # It is recommended to use a local domain for such services. As for Grafana, I would suggest setting a public DNS for Grafana
 # but limiting access by IP (team VPN or office IP)
-prometheus_domain: prometheus.example.local # If you prefer not to install NGINX, make sure you add {{ prometheus_http_port }} to the URL
+prometheus_domain: prometheus.example.local # If you prefer not to install NGINX, make sure you add the {{ prometheus_http_port }} variable to the URL
 prometheus_url: "http://{{ prometheus_domain }}"
 prometheus_alertmanager_domain: alertmanager.example.local
-prometheus_alertmanager_url: "http://{{ prometheus_alertmanager_domain }}" # If you prefer not to install NGINX, make sure you add {{ prometheus_alertmanager_http_port }} to the URL
+prometheus_alertmanager_url: "http://{{ prometheus_alertmanager_domain }}" # If you prefer not to install NGINX, make sure you add the {{ prometheus_alertmanager_http_port }} variable to the URL
 consul_domain: consul.example.local
 grafana_domain: grafana.example.com
 
@@ -187,21 +217,32 @@ nginx_allow_ips:
 
 By default, you can put your regular config files in `{{ playbook_dir }}/config-files` and Jinja2 templates - in `{{ playbook_dir }}/config-templates`. Although, it is recommended to use the default file/diretcory structure and names, youc ou can override these vaules with corresponding variables (see the `defaults/main.yml` file for details)
 
-Here is the default directory structure:
+Here is an example of how your directory structure would look:
 
 ```
-config-files
-└── prometheus
-    └── rules
-        ├── alerts-kubernetes.yml
-        └── alerts.yml
-config-templates
-├── blackbox-exporter
-│   └── blackbox.yml.j2
-├── prometheus
-│   └── prometheus.yml.j2
-└── prometheus-alertmanager
-    └── alertmanager.yml.j2
+./playbook_dir
+├── config-files
+│   ├── grafana
+│   │   ├── dashboards
+│   │   │   ├── Domains_Overview.json    # optional (Grafana dashboard)
+│   │   │   ├── MySQL_Overview.json      # optional (Grafana dashboard)
+│   │   │   └── Servers_Overview.json    # optional (Grafana dashboard)
+│   │   └── provisioning
+│   │       ├── dashboards
+│   │       │   └── default.yml.j2       # optional (Grafana provisioning config, it'a a Jinja2 template because you pass the dashboards directory to it)
+│   │       └── datasources
+│   │           └── default.yml.j2       # optional (Grafana provisioning config, it'a a Jinja2 template because you pass datasource details to it)
+│   └── prometheus
+│       └── rules
+│           ├── alerts-kubernetes.yml    # optional (Prometheus alert rules)
+│           └── alerts.yml               # optional (Prometheus alert rules)
+├── config-templates
+│   ├── blackbox-exporter
+│   │   └── blackbox.yml.j2              # mandatory (Blackbox Exporter main config file, it'a a Jinja2 template in case you need to pass some variables from an Ansible vars file)
+│   ├── prometheus
+│   │   └── prometheus.yml.j2            # mandatory (Prometheus main config file, it'a a Jinja2 template because you pass container names, IPs, AWS/GCP creds for discovery, etc. )
+│   └── prometheus-alertmanager
+│       └── alertmanager.yml.j2          # mandatory (Alertmanager main config file, it'a a Jinja2 template because you pass Slack or email creds to it for alerting)
 ```
 
 `config-files/prometheus/rules` - put as many files with Prometheus rules as you wish; usually, alert rules for different projects differ from each other, so I would not use Jinja2 templates here
