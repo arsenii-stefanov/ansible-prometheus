@@ -85,7 +85,8 @@ grafana_data_host_dir: "{{ prometheus_main_mount_dir }}/grafana/data"
 grafana_data_container_dir: "/var/lib/grafana"
 
 grafana_provisioning_host_dir: "{{ grafana_config_host_dir }}/provisioning"
-grafana_provisioning_container_dir: "/usr/share/grafana/conf/provisioning"
+#grafana_provisioning_container_dir: "/usr/share/grafana/conf/provisioning"
+grafana_provisioning_container_dir: "{{ grafana_config_container_dir }}/provisioning"
 
 grafana_provis_dashboards_host_dir: "{{ grafana_provisioning_host_dir }}/dashboards"
 grafana_provis_dashboards_container_dir: "{{ grafana_provisioning_container_dir }}/dashboards"
@@ -99,6 +100,36 @@ grafana_dashboards_container_dir: "{{ grafana_data_container_dir }}/dashboards"
 prometheus_main_config_file: "prometheus.yml"
 prometheus_alertmanager_config_file: "alertmanager.yml"
 blackbox_exporter_main_config_file: "blackbox.yml"
+
+# GRAFANA Configs
+
+grafana_templates: [
+    {
+      src: "{{ config_templates_path }}/grafana/provisioning/dashboards/default.yml.j2",
+      dest: "{{ grafana_provis_dashboards_host_dir }}/default.yml",
+      owner: "{{ grafana_owner }}",
+      group: "{{ grafana_group }}",
+      mode: "0644"
+    },
+    {
+      src: "{{ config_templates_path }}/grafana/provisioning/datasources/default.yml.j2",
+      dest: "{{ grafana_provis_datasources_host_dir }}/default.yml",
+      owner: "{{ grafana_owner }}",
+      group: "{{ grafana_group }}",
+      mode: "0644"
+    }
+]
+
+grafana_files: [
+    {
+      src: "{{ config_files_path }}/grafana/dashboards/",
+      dest: "{{ grafana_dashboards_host_dir }}",
+      owner: "{{ grafana_owner }}",
+      group: "{{ grafana_group }}",
+      mode: "0644"
+    }
+]
+
 
 ###########################
 ###     DIRECTORIES     ###  
@@ -348,6 +379,8 @@ grafana_config:
     image_tag: "{{ grafana_version_docker }}"
     volumes:
       - "{{ grafana_data_host_dir }}:{{ grafana_data_container_dir }}"
+      - "{{ grafana_provis_dashboards_host_dir }}:{{ grafana_provis_dashboards_container_dir }}"
+      - "{{ grafana_provis_datasources_host_dir }}:{{ grafana_provis_datasources_container_dir }}"
     ports:
       - "{{ grafana_http_port }}:{{ grafana_http_port }}"
     env_vars:

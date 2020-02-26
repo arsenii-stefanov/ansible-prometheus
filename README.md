@@ -152,32 +152,9 @@ grafana_version_docker: "6.6.0"
 # Optionally, you can add pre-configured Datasources and Dashboards for Grafana. See the example below
 # (config_templates_path, config_templates_path and other variables are defined in 'defaults/main.yml')
 
-grafana_templates: [
-    {
-      src: "{{ config_templates_path }}/grafana/provisioning/dashboards/default.yml.j2",
-      dest: "{{ grafana_provis_dashboards_host_dir }}",
-      owner: "{{ grafana_owner }}",
-      group: "{{ grafana_group }}",
-      mode: "0755"
-    },
-    {
-      src: "{{ config_templates_path }}/grafana/provisioning/datasources/default.yml.j2",
-      dest: "{{ grafana_provis_datasources_host_dir }}",
-      owner: "{{ grafana_owner }}",
-      group: "{{ grafana_group }}",
-      mode: "0755"
-    }
-]
+#grafana_templates: []
 
-grafana_files: [
-    {
-      src: "{{ config_files_path }}/grafana/dashboards/",
-      dest: "{{ grafana_dashboards_host_dir }}",
-      owner: "{{ grafana_owner }}",
-      group: "{{ grafana_group }}",
-      mode: "0755"
-    }
-]
+#grafana_files: []
 
 # NGINX reverse proxy (with NGINX you can access your services by a DNS name and use the same port)
 install_nginx_reverse_proxy: true

@@ -21,7 +21,7 @@
   when: grafana_templates is defined and grafana_templates != ""
 
 - name: GRAFANA DOCKER TASK | Copy Config Files [from files]
-  template:
+  file:
     src: "{{ item.src }}"
     dest: "{{ item.dest }}"
     owner: "{{ item.owner }}"
