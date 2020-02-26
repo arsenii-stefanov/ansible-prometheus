@@ -43,7 +43,7 @@
     tty: yes
     ports: "{{ blackbox_exporter_config['docker_opts']['ports'] | default(omit) }}"
     command:
-      - "--web.listen-address=:{{ consul_http_port }}"
+      - "--web.listen-address=:{{ blackbox_exporter_http_port }}"
       - "--config.file={{ blackbox_exporter_config_container_dir }}/{{ blackbox_exporter_main_config_file }}"
     volumes: "{{ blackbox_exporter_config['docker_opts']['volumes'] | default(omit) }}"
     log_driver: "{{ blackbox_exporter_config['docker_opts']['log_driver'] | default(omit) }}"
