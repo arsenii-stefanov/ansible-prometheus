@@ -35,7 +35,7 @@ consul_version_docker: "1.6.2"
 prometheus_version_docker: "v2.15.2"
 prometheus_alertmanager_version_docker: "v0.20.0"
 blackbox_exporter_version_docker: "v0.16.0"
-domain_exporter_version_docker: "v1.4.0"
+domain_exporter_version_docker: "v0.1.8-devel"
 grafana_version_docker: "6.6.0"
 
 #####################
@@ -63,7 +63,7 @@ consul_data_host_dir: "{{ prometheus_main_mount_dir }}/consul/data"
 consul_data_container_dir: "/consul/data"
 
 prometheus_config_host_dir: "{{ prometheus_main_mount_dir }}/prometheus/config"
-prometheus_config_container_dir: "/etc/prometheus"
+prometheus_config_container_dir: "/etc/prometheus/config"
 
 prometheus_rules_config_host_dir: "{{ prometheus_main_mount_dir }}/prometheus/rules"
 prometheus_rules_config_container_dir: "/etc/prometheus-rules"
@@ -85,7 +85,6 @@ grafana_data_host_dir: "{{ prometheus_main_mount_dir }}/grafana/data"
 grafana_data_container_dir: "/var/lib/grafana"
 
 grafana_provisioning_host_dir: "{{ grafana_config_host_dir }}/provisioning"
-#grafana_provisioning_container_dir: "/usr/share/grafana/conf/provisioning"
 grafana_provisioning_container_dir: "{{ grafana_config_container_dir }}/provisioning"
 
 grafana_provis_dashboards_host_dir: "{{ grafana_provisioning_host_dir }}/dashboards"
@@ -304,7 +303,7 @@ prometheus_config:
     image_name: "prom/prometheus"
     image_tag: "{{ prometheus_version_docker }}"
     volumes:
-      - "{{ prometheus_config_host_dir }}/{{ prometheus_main_config_file }}:{{ prometheus_config_container_dir }}/{{ prometheus_main_config_file }}"
+      - "{{ prometheus_config_host_dir }}:{{ prometheus_config_container_dir }}"
       - "{{ prometheus_rules_config_host_dir }}:{{ prometheus_rules_config_container_dir }}"
       - "{{ prometheus_data_host_dir }}:{{ prometheus_data_container_dir }}"
     ports:
@@ -358,7 +357,7 @@ blackbox_exporter_config:
 domain_exporter_config:
   docker_opts:
     container_name: "domain-exporter"
-    image_name: "caarlos0/domain_exporter"
+    image_name: "quay.io/shift/domain_exporter"
     image_tag: "{{ domain_exporter_version_docker }}"
 #    volumes:
 #      - "{{ domain_exporter_config_host_dir }}:{{ domain_exporter_config_container_dir }}"
