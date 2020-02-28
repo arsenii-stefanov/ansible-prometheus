@@ -37,6 +37,7 @@ prometheus_alertmanager_version_docker: "v0.20.0"
 blackbox_exporter_version_docker: "v0.16.0"
 domain_exporter_version_docker: "v0.1.8-devel"
 grafana_version_docker: "6.6.0"
+nginx_version_docker: "1.17-alpine"
 
 #####################
 ###     PORTS     ###
@@ -58,6 +59,9 @@ prometheus_group: 65534
 
 grafana_owner: 472
 grafana_group: 472
+
+consul_owner: 100
+consul_group: 1000
 
 consul_data_host_dir: "{{ prometheus_main_mount_dir }}/consul/data"
 consul_data_container_dir: "/consul/data"
@@ -139,8 +143,8 @@ consul_directories: [
     {
       host_dir: "{{ consul_data_host_dir }}",
       container_dir: "{{ consul_data_container_dir }}",
-      owner: "root",
-      group: "root",
+      owner: "{{ consul_owner }}",
+      group: "{{ consul_group }}",
       mode: "0755"
     }
 ]
@@ -383,7 +387,7 @@ grafana_config:
     ports:
       - "{{ grafana_http_port }}:{{ grafana_http_port }}"
     env_vars:
-      GF_INSTALL_PLUGINS: ""
+      GF_INSTALL_PLUGINS: "{{ grafana_plugins | default('') }}"
       GF_SERVER_PROTOCOL: "http"
       GF_SERVER_HTTP_ADDR: "0.0.0.0"
       GF_SERVER_HTTP_PORT: "{{ grafana_http_port | string }}"
@@ -424,7 +428,7 @@ nginx_config:
   docker_opts:
     container_name: "nginx"
     image_name: "nginx"
-    image_tag: "1.17-alpine"
+    image_tag: "{{ nginx_version_docker }}"
     volumes:
       - "{{ nginx_config_host_dir }}:{{ nginx_config_container_dir }}"
     ports:
@@ -458,6 +462,7 @@ grafana_domain: grafana.example.com
 
 nginx_virtual_hosts: [
     { v_host: "{{ prometheus_domain }}",
+      server_name_aliases: "{{ prometheus_domain_aliases | default('') }}",
       http_listen_port: "80",
       https_listen_port: "",
       http_protocol: "",
@@ -472,6 +477,7 @@ nginx_virtual_hosts: [
       create: true
     },
     { v_host: "{{ prometheus_alertmanager_domain }}",
+      server_name_aliases: "{{ prometheus_alertmanager_domain_aliases | default('') }}",
       http_listen_port: "80",
       https_listen_port: "",
       http_protocol: "",
@@ -486,6 +492,7 @@ nginx_virtual_hosts: [
       create: "{{ install_prometheus_alertmanager }}" # true/false
     },
     { v_host: "{{ consul_domain }}",
+      server_name_aliases: "{{ consul_domain_aliases | default('') }}",
       http_listen_port: "80",
       https_listen_port: "",
       http_protocol: "",
@@ -500,6 +507,7 @@ nginx_virtual_hosts: [
       create: "{{ install_consul }}" # true/false
     },
     { v_host: "{{ grafana_domain }}",
+      server_name_aliases: "{{ grafana_domain_aliases | default('') }}",
       default_server_http: true,
       http_listen_port: "80",
       https_listen_port: "",

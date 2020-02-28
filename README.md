@@ -163,11 +163,15 @@ install_nginx_reverse_proxy: true
 # It is recommended to use a local domain for such services. As for Grafana, I would suggest setting a public DNS for Grafana
 # but limiting access by IP (team VPN or office IP)
 prometheus_domain: prometheus.example.local # If you prefer not to install NGINX, make sure you add the {{ prometheus_http_port }} variable to the URL
+prometheus_domain_aliases: []
 prometheus_url: "http://{{ prometheus_domain }}"
 prometheus_alertmanager_domain: alertmanager.example.local
+prometheus_alertmanager_domain_aliases: []
 prometheus_alertmanager_url: "http://{{ prometheus_alertmanager_domain }}" # If you prefer not to install NGINX, make sure you add the {{ prometheus_alertmanager_http_port }} variable to the URL
 consul_domain: consul.example.local
+consul_domain_aliases: []
 grafana_domain: grafana.example.com
+grafana_domain_aliases: grafana.example.local
 
 # In case you decided to hide your real IP, or if your Prometheus instance is in an internal network (which is even better), you put
 # Grafana (or the other services if you decided to make them public) behind a Load Balancer, or another reverse proxy, or CloudFlare DNS proxy

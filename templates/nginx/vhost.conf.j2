@@ -5,7 +5,7 @@
 {% if item.ssl_enable is defined and item.ssl_enable == true %}
 server {
     listen {{ item.http_listen_port }} {% if item.default_server_http is defined and item.default_server_http == true %}default{% endif %};
-    server_name {{ item.v_host }};
+    server_name {{ item.v_host }} {%if item.server_name_aliases is defined and item.server_name_aliases != "" %}{% for item in item.server_name_aliases %} {{ item }} {% endfor %}{% endif %};
     return 301 https://$host$request_uri;
 }
 {% endif %}
@@ -18,7 +18,7 @@ server {
     listen {{ item.https_listen_port }} {% if item.default_server_https is defined and item.default_server_https == true %}default{% endif %} ssl {{ item.http_protocol | default('http2') }};
 {% endif %}
 
-    server_name {{ item.v_host }};
+    server_name {{ item.v_host }} {%if item.server_name_aliases is defined and item.server_name_aliases != "" %}{% for item in item.server_name_aliases %} {{ item }} {% endfor %}{% endif %};
 
 {% if item.access_log is defined and item.access_log != "" %}
     access_log {{ item.access_log }} {{ item.access_log_format }};
