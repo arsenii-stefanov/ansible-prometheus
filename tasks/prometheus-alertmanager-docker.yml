@@ -7,6 +7,7 @@
     owner: "{{ item.owner }}"
     group: "{{ item.group }}"
     mode: "{{ item.mode }}"
+  notify: "restart_prometheus_alertmanager_docker"
   with_items: "{{ prometheus_alertmanager_directories }}"
 
 - name: PROMETHEUS ALERTMANAGER DOCKER TASK | Copy Config Files

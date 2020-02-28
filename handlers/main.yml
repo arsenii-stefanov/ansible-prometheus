@@ -11,12 +11,18 @@
     method: POST
     timeout: 180
 
-# PROMETHEUS
+- name: restart_prometheus_docker
+  shell: "docker restart {{ prometheus_config['docker_opts']['container_name'] }}"
+
+# PROMETHEUS ALERTMANAGER
 - name: reload_prometheus_alertmanager
   uri:
     url: "{{ prometheus_alertmanager_url }}/-/reload"
     method: POST
     timeout: 180
+
+- name: restart_prometheus_alertmanager_docker
+  shell: "docker restart {{ prometheus_alertmanager_config['docker_opts']['container_name'] }}"
 
 # BLACKBOX EXPORTER
 - name: restart_blackbox_exporter_docker
@@ -27,8 +33,5 @@
   shell: "docker restart {{ grafana_config['docker_opts']['container_name'] }}"
 
 # NGINX
-- name: reload_nginx_docker
-  shell: "docker exec -i {{ nginx_config['docker_opts']['container_name'] }} nginx -s reload"
 - name: nginx_check_config_and_reload_docker
-  shell: "docker exec -i {{ nginx_config['docker_opts']['container_name'] }} nginx -t"
-  notify: reload_nginx_docker
+  shell: "docker exec -i {{ nginx_config['docker_opts']['container_name'] }} sh -c 'nginx -t && nginx -s reload'"
