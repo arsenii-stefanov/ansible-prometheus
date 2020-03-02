@@ -392,7 +392,7 @@ grafana_config:
       GF_SERVER_HTTP_ADDR: "0.0.0.0"
       GF_SERVER_HTTP_PORT: "{{ grafana_http_port | string }}"
       GF_SERVER_DOMAIN: "localhost"
-      GF_SERVER_ROOT_URL: "http://grafana.example.com"
+      GF_SERVER_ROOT_URL: "{{ grafana_url }}"
       GF_DATABASE_TYPE: "sqlite3"
       GF_DATABASE_HOST: "localhost"
       GF_DATABASE_NAME: "grafana"
@@ -459,6 +459,8 @@ prometheus_domain: prometheus.example.com
 prometheus_alertmanager_domain: alertmanager.example.com
 consul_domain: consul.example.com
 grafana_domain: grafana.example.com
+grafana_domain_aliases: [ "grafana.example.local" ]
+grafana_url: "https://{{ grafana_domain }}"
 
 nginx_virtual_hosts: [
     { v_host: "{{ prometheus_domain }}",
