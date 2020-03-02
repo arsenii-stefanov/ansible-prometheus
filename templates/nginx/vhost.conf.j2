@@ -20,6 +20,10 @@ server {
 
     server_name {{ item.v_host }} {%if item.server_name_aliases is defined and item.server_name_aliases != "" %}{% for item in item.server_name_aliases %} {{ item }} {% endfor %}{% endif %};
 
+    if ($http_x_forwarded_proto = "http") { 
+        return 301 https://$host$request_uri;
+    }
+
 {% if item.access_log is defined and item.access_log != "" %}
     access_log {{ item.access_log }} {{ item.access_log_format }};
 {% endif %}
