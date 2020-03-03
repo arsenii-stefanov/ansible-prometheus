@@ -59,20 +59,20 @@ Ansible-Prometheus
 ```
 # Basic server setup
 - src: https://github.com/arsenii-stefanov/ansible-basic-server-setup.git
-  path: roles
   scm: git
+  version: master
 # Set up Python
 - src: https://github.com/arsenii-stefanov/ansible-python.git
-  path: roles
   scm: git
+  version: master
 # Set up Docker
 - src: https://github.com/arsenii-stefanov/ansible-docker.git
-  path: roles
   scm: git
+  version: master
 # Set up Prometheus
 - src: https://github.com/arsenii-stefanov/ansible-prometheus.git
-  path: roles
   scm: git
+  version: master
 ```
 
 * `FILE: {{ playbook_dir }}/vars/prometheus-secrets.yml`
