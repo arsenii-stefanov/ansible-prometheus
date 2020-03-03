@@ -48,3 +48,4 @@
     networks: "{{ grafana_config['docker_opts']['networks'] | default(omit) }}"
     purge_networks: "{{ grafana_config['docker_opts']['purge_networks'] | default(omit) }}"
     env: "{{ grafana_config['docker_opts']['env_vars'] | default(omit) }}"
+  no_log: true
