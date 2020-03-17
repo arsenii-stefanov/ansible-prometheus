@@ -31,7 +31,7 @@ install_domain_exporter: true
 install_grafana: true
 
 # Software versions
-consul_version_docker: "1.6.2"
+consul_version_docker: "1.7.2"
 prometheus_version_docker: "v2.15.2"
 prometheus_alertmanager_version_docker: "v0.20.0"
 blackbox_exporter_version_docker: "v0.16.0"
@@ -54,15 +54,17 @@ grafana_http_port: 3000
 ###     FILES AND DIRECTORIES     ###
 #####################################
 
-prometheus_owner: 65534
-prometheus_group: 65534
+prometheus_owner: "65534"
+prometheus_group: "65534"
 
-grafana_owner: 472
-grafana_group: 472
+grafana_owner: "472"
+grafana_group: "472"
 
-consul_owner: 100
-consul_group: 1000
+consul_owner: "100"
+consul_group: "1000"
 
+consul_config_host_dir: "{{ prometheus_main_mount_dir }}/consul/config"
+consul_config_container_dir: "/consul/config"
 consul_data_host_dir: "{{ prometheus_main_mount_dir }}/consul/data"
 consul_data_container_dir: "/consul/data"
 
@@ -78,6 +80,7 @@ prometheus_data_container_dir: "/prometheus"
 
 prometheus_alertmanager_config_host_dir: "{{ prometheus_main_mount_dir }}/prometheus-alertmanager/config"
 prometheus_alertmanager_config_container_dir: "/etc/alertmanager"
+prometheus_alertmanager_data_container_dir: "/alertmanager"
 
 blackbox_exporter_config_host_dir: "{{ prometheus_main_mount_dir }}/blackbox-exporter/config"
 blackbox_exporter_config_container_dir: "/config"
@@ -102,6 +105,7 @@ grafana_dashboards_container_dir: "{{ grafana_data_container_dir }}/dashboards"
 
 prometheus_main_config_file: "prometheus.yml"
 prometheus_alertmanager_config_file: "alertmanager.yml"
+consul_main_config_file: "config.json"
 blackbox_exporter_main_config_file: "blackbox.yml"
 
 # GRAFANA Configs
@@ -140,6 +144,13 @@ grafana_files: [
 
 # CONSUL DIRECTORIES
 consul_directories: [
+    {
+      host_dir: "{{ consul_config_host_dir }}",
+      container_dir: "{{ consul_config_container_dir }}",
+      owner: "{{ consul_owner }}",
+      group: "{{ consul_group }}",
+      mode: "0755"
+    },
     {
       host_dir: "{{ consul_data_host_dir }}",
       container_dir: "{{ consul_data_container_dir }}",
@@ -283,6 +294,40 @@ blackbox_exporter_templates: [
 ###     CONFIGS     ###
 #######################
 
+# LOGGING
+
+consul_docker_log_driver: "json-file"
+consul_docker_log_options:
+  max-size: "256m"
+prometheus_docker_log_driver: "json-file"
+prometheus_docker_log_options:
+  max-size: "256m"
+prometheus_alertmanager_docker_log_driver: "json-file"
+prometheus_alertmanager_log_options:
+  max-size: "256m"
+blackbox_exporter_docker_log_driver: "json-file"
+blackbox_exporter_log_options:
+  max-size: "256m"
+domain_exporter_docker_log_driver: "json-file"
+domain_exporter_log_options:
+  max-size: "256m"
+grafana_docker_log_driver: "json-file"
+grafana_docker_log_options:
+  max-size: "256m"
+nginx_docker_log_driver: "json-file"
+nginx_docker_log_options:
+  max-size: "256m"
+
+# This dictionary will be converted to JSON as is for further usage by Consul
+consul_config_opts:
+  datacenter: "prometheus"
+  data_dir: "/consul/data"
+  node_name: "consul-server-1"
+  server: true
+  ui: true
+  log_level: "INFO"
+  log_json: true
+
 # CONSUL CONFIGS
 consul_config:
   docker_opts:
@@ -291,14 +336,18 @@ consul_config:
     image_tag: "{{ consul_version_docker }}"
     volumes:
       - "{{ consul_data_host_dir }}:{{ consul_data_container_dir }}"
+      - "{{ consul_config_host_dir }}:{{ consul_config_container_dir }}"
     ports:
       - "{{ consul_http_port }}:{{ consul_http_port }}"
     env_vars:
       var: ""
-    log_driver: "json-file"
+    log_driver: "{{ consul_docker_log_driver }}"
+    log_options: "{{ consul_docker_log_options }}"
     network_mode: "bridge"
     networks: "{{ prometheus_docker_networks }}"
     purge_networks: true
+  # This dictionary will be converted to JSON as is for further usage by Consul
+  config_opts: "{{ consul_config_opts }}"
 
 # PROMETHEUS CONFIGS
 prometheus_config:
@@ -314,7 +363,8 @@ prometheus_config:
       - "{{ prometheus_http_port }}:{{ prometheus_http_port }}"
     env_vars:
       EXTERNAL_URL: "{{ prometheus_url }}"
-    log_driver: "json-file"
+    log_driver: "{{ prometheus_docker_log_driver }}"
+    log_options: "{{ prometheus_docker_log_options }}"
     network_mode: "bridge"
     networks: "{{ prometheus_docker_networks }}"
     purge_networks: true
@@ -322,6 +372,8 @@ prometheus_config:
     max_connections: "1024"
     retention_policy: "{{ prometheus_retention_policy | default('180d') }}"
     max_concurrency: "500"
+    log_format: "{{ prometheus_log_format | default('json') }}"
+    log_level: "{{ prometheus_log_level | default('info') }}"
 
 # PROMETHEUS ALERTMANAGER CONFIGS
 prometheus_alertmanager_config:
@@ -335,10 +387,15 @@ prometheus_alertmanager_config:
       - "{{ prometheus_alertmanager_http_port }}:{{ prometheus_alertmanager_http_port }}"
     env_vars:
       var: ""
-    log_driver: "json-file"
+    log_driver: "{{ prometheus_alertmanager_docker_log_driver }}"
+    log_options: "{{ prometheus_alertmanager_log_options }}"
     network_mode: "bridge"
     networks: "{{ prometheus_docker_networks }}"
     purge_networks: true
+  config_opts:
+    log_format: "{{ prometheus_alertmanager_log_format | default('json') }}"
+    log_level: "{{ prometheus_alertmanager_log_level | default('info') }}"
+
 
 # BLACKBOX EXPORTER CONFIGS
 blackbox_exporter_config:
@@ -352,7 +409,8 @@ blackbox_exporter_config:
       - "{{ blackbox_exporter_http_port }}:{{ blackbox_exporter_http_port }}"
     env_vars:
       var: ""
-    log_driver: "json-file"
+    log_driver: "{{ blackbox_exporter_docker_log_driver }}"
+    log_options: "{{ blackbox_exporter_log_options }}"
     network_mode: "bridge"
     networks: "{{ prometheus_docker_networks }}"
     purge_networks: true
@@ -369,7 +427,8 @@ domain_exporter_config:
       - "{{ domain_exporter_http_port }}:{{ domain_exporter_http_port }}"
     env_vars:
       var: ""
-    log_driver: "json-file"
+    log_driver: "{{ domain_exporter_docker_log_driver }}"
+    log_options: "{{ domain_exporter_log_options }}"
     network_mode: "bridge"
     networks: "{{ prometheus_docker_networks }}"
     purge_networks: true
@@ -402,7 +461,12 @@ grafana_config:
       GF_SECURITY_ADMIN_PASSWORD: "{{ grafana_admin_password }}"
       GF_SECURITY_ADMIN_USER: "admin"
       GF_SECURITY_SECRET_KEY: "{{ grafana_secret_key }}"
-    log_driver: "json-file"
+      GF_LOG_MODE: "{{ grafana_log_mode | default ('console') }}"
+      GF_LOG_LEVEL: "{{ grafana_log_level | default ('info') }}"
+      GF_LOG_CONSOLE_LEVEL: "{{ grafana_log_console_level | default ('info') }}"
+      GF_LOG_CONSOLE_FORMAT: "{{ grafana_log_console_format | default ('json') }}"
+    log_driver: "{{ grafana_docker_log_driver }}"
+    log_options: "{{ grafana_docker_log_options }}"
     network_mode: "bridge"
     networks: "{{ prometheus_docker_networks }}"
     purge_networks: true
@@ -433,7 +497,8 @@ nginx_config:
       - "{{ nginx_config_host_dir }}:{{ nginx_config_container_dir }}"
     ports:
       - "{{ nginx_http_port }}:{{ nginx_http_port }}"
-    log_driver: "json-file"
+    log_driver: "{{ nginx_docker_log_driver }}"
+    log_options: "{{ nginx_docker_log_options }}"
     network_mode: "bridge"
     networks: "{{ prometheus_docker_networks | default('prometheus') }}"
     purge_networks: true
@@ -462,69 +527,68 @@ grafana_domain: grafana.example.com
 grafana_domain_aliases: [ "grafana.example.local" ]
 grafana_url: "https://{{ grafana_domain }}"
 
-nginx_virtual_hosts: [
-    { v_host: "{{ prometheus_domain }}",
-      server_name_aliases: "{{ prometheus_domain_aliases | default('') }}",
-      http_listen_port: "80",
-      https_listen_port: "",
-      http_protocol: "",
-      access_log: "",
-      access_log_format: "",
-      error_log_format: "",
-      error_log: "",
-      upstream: "{{ prometheus_config['docker_opts']['container_name'] }}:{{ prometheus_http_port }}",
-      upstream_name: "prometheus",
-      ssl_enable: false,
-      nginx_basic_auth_file_path: "",
-      create: true
-    },
-    { v_host: "{{ prometheus_alertmanager_domain }}",
-      server_name_aliases: "{{ prometheus_alertmanager_domain_aliases | default('') }}",
-      http_listen_port: "80",
-      https_listen_port: "",
-      http_protocol: "",
-      access_log: "",
-      access_log_format: "",
-      error_log_format: "",
-      error_log: "",
-      upstream: "{{ prometheus_alertmanager_config['docker_opts']['container_name'] }}:{{ prometheus_alertmanager_http_port }}",
-      upstream_name: "alertmanager",
-      ssl_enable: false,
-      nginx_basic_auth_file_path: "",
-      create: "{{ install_prometheus_alertmanager }}" # true/false
-    },
-    { v_host: "{{ consul_domain }}",
-      server_name_aliases: "{{ consul_domain_aliases | default('') }}",
-      http_listen_port: "80",
-      https_listen_port: "",
-      http_protocol: "",
-      access_log: "",
-      access_log_format: "",
-      error_log_format: "",
-      error_log: "",
-      upstream: "{{ consul_config['docker_opts']['container_name'] }}:{{ consul_http_port }}",
-      upstream_name: "consul",
-      ssl_enable: false,
-      nginx_basic_auth_file_path: "",
-      create: "{{ install_consul }}" # true/false
-    },
-    { v_host: "{{ grafana_domain }}",
-      server_name_aliases: "{{ grafana_domain_aliases | default('') }}",
-      default_server_http: true,
-      http_listen_port: "80",
-      https_listen_port: "",
-      http_protocol: "",
-      access_log: "",
-      access_log_format: "",
-      error_log_format: "",
-      error_log: "",
-      upstream: "{{ grafana_config['docker_opts']['container_name'] }}:{{ grafana_http_port }}",
-      upstream_name: "grafana",
-      ssl_enable: false,
-      nginx_basic_auth_file_path: "",
-      create: "{{ install_grafana }}" # true/false
-    },
-]
+nginx_virtual_hosts:
+- v_host: "{{ prometheus_domain }}"
+  server_name_aliases: "{{ prometheus_domain_aliases | default('') }}"
+  http_listen_port: "80"
+  https_listen_port: ""
+  http_protocol: ""
+  access_log: ""
+  access_log_format: ""
+  error_log_format: ""
+  error_log: ""
+  upstream: "{{ prometheus_config['docker_opts']['container_name'] }}:{{ prometheus_http_port }}"
+  upstream_name: "prometheus"
+  ssl_enable: false
+  allow_ips: "{{ prometheus_nginx_allow_ips | default(omit) }}"
+  nginx_basic_auth_file_path: ""
+  create: true
+- v_host: "{{ prometheus_alertmanager_domain }}"
+  server_name_aliases: "{{ prometheus_alertmanager_domain_aliases | default('') }}"
+  http_listen_port: "80"
+  https_listen_port: ""
+  http_protocol: ""
+  access_log: ""
+  access_log_format: ""
+  error_log_format: ""
+  error_log: ""
+  upstream: "{{ prometheus_alertmanager_config['docker_opts']['container_name'] }}:{{ prometheus_alertmanager_http_port }}"
+  upstream_name: "alertmanager"
+  ssl_enable: false,
+  allow_ips: "{{ prometheus_alertmanager_nginx_allow_ips | default(omit) }}"
+  nginx_basic_auth_file_path: ""
+  create: "{{ install_prometheus_alertmanager }}" # true/false
+- v_host: "{{ consul_domain }}"
+  server_name_aliases: "{{ consul_domain_aliases | default('') }}"
+  http_listen_port: "80"
+  https_listen_port: ""
+  http_protocol: ""
+  access_log: ""
+  access_log_format: ""
+  error_log_format: ""
+  error_log: ""
+  upstream: "{{ consul_config['docker_opts']['container_name'] }}:{{ consul_http_port }}"
+  upstream_name: "consul"
+  ssl_enable: false
+  allow_ips: "{{ consul_nginx_allow_ips | default(omit) }}"
+  nginx_basic_auth_file_path: ""
+  create: "{{ install_consul }}" # true/false
+- v_host: "{{ grafana_domain }}"
+  server_name_aliases: "{{ grafana_domain_aliases | default('') }}"
+  default_server_http: true
+  http_listen_port: "80"
+  https_listen_port: ""
+  http_protocol: ""
+  access_log: ""
+  access_log_format: ""
+  error_log_format: ""
+  error_log: ""
+  upstream: "{{ grafana_config['docker_opts']['container_name'] }}:{{ grafana_http_port }}"
+  upstream_name: "grafana"
+  ssl_enable: false
+  allow_ips: "{{ grafana_nginx_allow_ips | default(omit) }}"
+  nginx_basic_auth_file_path: ""
+  create: "{{ install_grafana }}" # true/false
 
 
 ## If nginx_allow_ips is enabled, only these IP will be whitelisted, the rest will be blacklisted

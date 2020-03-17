@@ -1,6 +1,8 @@
 Ansible-Prometheus
 =========
 
+#### It is highly recommended that you do not directly access this repository from your CI/CD jobs. Make a fork in your project's SCM instead. By doing so, you make sure that your cluster will not be broken in case one of the new commits appear to have a bug. You can keep the fork synchronized with the origin manually
+
 ## Components
 
 * `Prometheus` (monitoring server - scrapes mertics from remote exporters/agents exposing metrics via HTTP)
@@ -134,7 +136,7 @@ prometheus_disk_mounts: ""
 prometheus_retention_policy: "180d"
 
 # Software versions (there are Docker image tags which you can find on the corresponding pages on https://hub.docker.com/ )
-consul_version_docker: "1.6.2"
+consul_version_docker: "1.7.2"
 prometheus_version_docker: "v2.15.2"
 prometheus_alertmanager_version_docker: "v0.20.0"
 blackbox_exporter_version_docker: "v0.16.0"
@@ -185,7 +187,16 @@ nginx_real_ip:
   real_ip_header: "X-Forwarded-For"
   real_ip_recursive: "on"
 
-nginx_allow_ips:
+prometheus_nginx_allow_ips:
+  - ip: "10.128.0.0/9"
+    comment: "GCP Internal network"
+prometheus_alertmanager_nginx_allow_ips:
+  - ip: "10.128.0.0/9"
+    comment: "GCP Internal network"
+consul_nginx_allow_ips:
+  - ip: "10.128.0.0/9"
+    comment: "GCP Internal network"
+grafana_nginx_allow_ips:
   - ip: "35.35.45.45/32"
     comment: "VPN"
   - ip: "130.211.0.0/22"
