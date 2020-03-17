@@ -11,6 +11,7 @@
     tty: yes
     ports: "{{ domain_exporter_config['docker_opts']['ports'] | default(omit) }}"
     log_driver: "{{ domain_exporter_config['docker_opts']['log_driver'] | default(omit) }}"
+    log_options: "{{ domain_exporter_config['docker_opts']['log_options'] | default(omit) }}"
     network_mode: "{{ domain_exporter_config['docker_opts']['network_mode'] | default('bridge') }}"
     networks: "{{ domain_exporter_config['docker_opts']['networks'] | default(omit) }}"
     purge_networks: "{{ domain_exporter_config['docker_opts']['purge_networks'] | default(omit) }}"

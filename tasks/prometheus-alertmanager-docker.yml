@@ -42,8 +42,14 @@
     interactive: yes
     tty: yes
     ports: "{{ prometheus_alertmanager_config['docker_opts']['ports'] | default(omit) }}"
+    command:
+      - "--config.file={{ prometheus_alertmanager_config_container_dir }}/{{ prometheus_alertmanager_config_file }}"
+      - "--storage.path={{ prometheus_alertmanager_data_container_dir }}"
+      - "--log.format={{ prometheus_alertmanager_config['config_opts']['log_format'] }}"
+      - "--log.level={{ prometheus_alertmanager_config['config_opts']['log_level'] }}"
     volumes: "{{ prometheus_alertmanager_config['docker_opts']['volumes'] | default(omit) }}"
     log_driver: "{{ prometheus_alertmanager_config['docker_opts']['log_driver'] | default(omit) }}"
+    log_options: "{{ prometheus_alertmanager_config['docker_opts']['log_options'] | default(omit) }}"
     network_mode: "{{ prometheus_alertmanager_config['docker_opts']['network_mode'] | default('bridge') }}"
     networks: "{{ prometheus_alertmanager_config['docker_opts']['networks'] | default(omit) }}"
     purge_networks: "{{ prometheus_alertmanager_config['docker_opts']['purge_networks'] | default(omit) }}"

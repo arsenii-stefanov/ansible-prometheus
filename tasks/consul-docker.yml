@@ -10,6 +10,15 @@
   notify: "restart_consul_docker"
   with_items: "{{ consul_directories }}"
 
+- name: CONSUL DOCKER TASK | Create Consul Main Config File
+  copy:
+    content: "{{ consul_config['config_opts'] | to_nice_json }}"
+    dest: "{{ consul_config_host_dir }}/{{ consul_main_config_file }}"
+    owner: "{{ consul_owner }}"
+    group: "{{ consul_group }}"
+    mode: 0600
+  notify: "restart_consul_docker"
+
 - name: CONSUL DOCKER TASK | Copy Config Files
   copy:
     src: "{{ item.src }}"
@@ -44,6 +53,7 @@
     ports: "{{ consul_config['docker_opts']['ports'] | default(omit) }}"
     volumes: "{{ consul_config['docker_opts']['volumes'] | default(omit) }}"
     log_driver: "{{ consul_config['docker_opts']['log_driver'] | default(omit) }}"
+    log_options: "{{  consul_config['docker_opts']['log_options'] | default(omit) }}"
     network_mode: "{{ consul_config['docker_opts']['network_mode'] | default('bridge') }}"
     networks: "{{ consul_config['docker_opts']['networks'] | default(omit) }}"
     purge_networks: "{{ consul_config['docker_opts']['purge_networks'] | default(omit) }}"

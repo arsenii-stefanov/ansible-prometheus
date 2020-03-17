@@ -44,6 +44,7 @@
     ports: "{{ grafana_config['docker_opts']['ports'] | default(omit) }}"
     volumes: "{{ grafana_config['docker_opts']['volumes'] | default(omit) }}"
     log_driver: "{{ grafana_config['docker_opts']['log_driver'] | default(omit) }}"
+    log_options: "{{ grafana_config['docker_opts']['log_options'] | default(omit) }}"
     network_mode: "{{ grafana_config['docker_opts']['network_mode'] | default('bridge') }}"
     networks: "{{ grafana_config['docker_opts']['networks'] | default(omit) }}"
     purge_networks: "{{ grafana_config['docker_opts']['purge_networks'] | default(omit) }}"
