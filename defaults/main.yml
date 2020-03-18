@@ -80,6 +80,7 @@ prometheus_data_container_dir: "/prometheus"
 
 prometheus_alertmanager_config_host_dir: "{{ prometheus_main_mount_dir }}/prometheus-alertmanager/config"
 prometheus_alertmanager_config_container_dir: "/etc/alertmanager"
+prometheus_alertmanager_data_host_dir: "{{ prometheus_main_mount_dir }}/prometheus-alertmanager/data"
 prometheus_alertmanager_data_container_dir: "/alertmanager"
 
 blackbox_exporter_config_host_dir: "{{ prometheus_main_mount_dir }}/blackbox-exporter/config"
@@ -190,6 +191,13 @@ prometheus_alertmanager_directories: [
     {
       host_dir: "{{ prometheus_alertmanager_config_host_dir }}",
       container_dir: "{{ prometheus_alertmanager_config_container_dir }}",
+      owner: "{{ prometheus_owner }}",
+      group: "{{ prometheus_group }}",
+      mode: "0755"
+    },
+    {
+      host_dir: "{{ prometheus_alertmanager_data_host_dir }}",
+      container_dir: "{{ prometheus_alertmanager_data_container_dir }}",
       owner: "{{ prometheus_owner }}",
       group: "{{ prometheus_group }}",
       mode: "0755"
@@ -383,6 +391,7 @@ prometheus_alertmanager_config:
     image_tag: "{{ prometheus_alertmanager_version_docker }}"
     volumes:
       - "{{ prometheus_alertmanager_config_host_dir }}:{{ prometheus_alertmanager_config_container_dir }}"
+      - "{{ prometheus_alertmanager_data_host_dir }}:{{ prometheus_alertmanager_data_container_dir }}"
     ports:
       - "{{ prometheus_alertmanager_http_port }}:{{ prometheus_alertmanager_http_port }}"
     env_vars:
